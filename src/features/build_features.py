@@ -6,22 +6,13 @@ Created on Tue Jun 23 15:31 2021
 @author: Armando Cruz (Gory)
 """
 
-import glob
 import time
 import argparse
 import numpy as np
 from dipy.io.stateful_tractogram import StatefulTractogram,Space
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.viz import window, actor
+from src.utils import constants
 
-clusters_names = [
-    'AC', 'AF_L', 'AF_R', 'CC_MID', 'CGFP_L', 'CGFP_R', 'CGH_L', 'CGH_R', 'CGR_L', 'CGR_R',
-    'CG_L', 'CG_R', 'CST_L', 'CST_R', 'FA_L', 'FA_R', 'FMA', 'FMI', 'FX_L', 'FX_R', 
-    'IFOF_L', 'IFOF_R', 'ILF_L', 'ILF_R', 'MLF_L', 'MLF_R', 'OR_L', 'OR_R', 'SLF_L', 'SLF_R', 
-    'TAPETUM', 'UF_L', 'UF_R', 'VOF_L', 'VOF_R'
-]
-raw_data_path = '../data/HCP_tracto/'
-training_data_path = '../data/training/'
 errors_2 = np.array([ [x1, x2, x3, x4, x5, x6] for x1 in range(2) for x2 in range(2) for x3 in range(2)
                                     for x4 in range(2) for x5 in range(2) for x6 in range(2)], dtype=np.int32)
 errors_3 = np.array([ [x1, x2, x3, x4, x5, x6] for x1 in range(-1,2) for x2 in range(-1,2) for x3 in range(-1,2)
@@ -48,8 +39,8 @@ if __name__ == '__main__':
 
     print('##### Loading full tractogram')
     tic = time.time()
-    full_tract = load_tractogram(raw_data_path+args.subject+'_full_20p.tck', 
-                                 raw_data_path+args.subject+'/'+args.ref, 
+    full_tract = load_tractogram(constants.data_raw_path+args.subject+'_full_20p.tck', 
+                                 constants.data_raw_path+args.subject+'/'+args.ref, 
                                  bbox_valid_check=False)
     full_streamlines = np.array(full_tract.streamlines)
     full_streamlines_endpts = np.floor(full_streamlines[:,(0,-1)]/epsilon).reshape((full_streamlines.shape[0], 2*3))
@@ -61,15 +52,15 @@ if __name__ == '__main__':
     print('Full tracto size:', full_tracto_size)
     print()
     
-    clusters_paths = [ raw_data_path+args.subject+'/'+cname+'_20p.tck' for cname in clusters_names ]
+    clusters = constants.get_clusters(args.subject)
     cluster_tracto_size = 0
     not_found = []
     not_found_endpts = []
     not_found_labels = []
 
-    for c in range(len(clusters_names)):
-        cluster_path = clusters_paths[c]
-        cluster_name = clusters_names[c]
+    for c in range(len(clusters['names'])):
+        cluster_path = clusters['paths'][c]
+        cluster_name = clusters['names'][c]
         cluster_label = c+1
         if cluster_label == -1:
             continue
@@ -77,7 +68,7 @@ if __name__ == '__main__':
         print('##### Loading cluster:', cluster_name, c)
         tic = time.time()
         cluster_tract = load_tractogram(cluster_path, 
-                                     raw_data_path+args.subject+'/'+args.ref, 
+                                     constants.data_raw_path+args.subject+'/'+args.ref, 
                                      bbox_valid_check=False)
         cluster_streamlines = np.array(cluster_tract.streamlines)
         cluster_tracto_size += len(cluster_streamlines)
@@ -186,13 +177,13 @@ if __name__ == '__main__':
     # Notfound data
     x_notfound = np.array(np.array(not_found))
     y_notfound = np.array(np.array(not_found_labels))
-    save_dir = training_data_path+args.subject+'/'
+    save_dir = constants.data_proc_path+args.subject+'/'
     with open(save_dir+args.subject+'_notfound.npy', 'w+b') as f:
         np.save(f, x_notfound)
         np.save(f, y_notfound)
     if args.tck:
         save_streamlines(x_notfound, 
-                        raw_data_path+args.subject+'/'+args.ref,
+                        constants.data_raw_path+args.subject+'/'+args.ref,
                         save_dir+'tck/'+args.subject+'_notfound.tck')
     # Training data
     x_training = np.concatenate((full_streamlines, x_notfound), axis=0)
@@ -202,7 +193,7 @@ if __name__ == '__main__':
         np.save(f, y_training)
     if args.tck:
         save_streamlines(x_training, 
-                        raw_data_path+args.subject+'/'+args.ref,
+                        constants.data_raw_path+args.subject+'/'+args.ref,
                         save_dir+'tck/'+args.subject+'.tck')
     # Labeled cluster data
     x_labeled = x_training[y_training != 0]
@@ -212,7 +203,7 @@ if __name__ == '__main__':
         np.save(f, y_labeled)
     if args.tck:
         save_streamlines(x_labeled, 
-                        raw_data_path+args.subject+'/'+args.ref,
+                        constants.data_raw_path+args.subject+'/'+args.ref,
                         save_dir+'tck/'+args.subject+'_labeled.tck')
     # Garbage data
     x_garbage = x_training[y_training == 0]
@@ -220,7 +211,7 @@ if __name__ == '__main__':
         np.save(f, x_garbage)
     if args.tck:
         save_streamlines(x_garbage, 
-                        raw_data_path+args.subject+'/'+args.ref,
+                        constants.data_raw_path+args.subject+'/'+args.ref,
                         save_dir+'tck/'+args.subject+'_garbage.tck')
     toc = time.time()
     print('Save results time:', toc-tic)

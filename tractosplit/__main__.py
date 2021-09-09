@@ -11,9 +11,9 @@ from dipy.io.streamline import load_tractogram,save_tractogram
 from dipy.align.streamlinear import set_number_of_points
 from dipy.viz import window, actor, ui, colormap as cmap
 from dipy.viz.app import distinguishable_colormap
-from models.lstm_classifier import lstmClassifier
-from models.tf_classifier import tfClassifier
-from models.cnn_classifier import cnnClassifier
+from src.models.LSTM.lstm_classifier import lstmClassifier
+from src.models.tf_classifier import tfClassifier
+from src.models.cnn_classifier import cnnClassifier
 
 raw_data_path = './data/HCP_tracto/'
 result_data_path = './data/results/'
