@@ -1,4 +1,4 @@
-.PHONY: clean data lint requirements help
+.PHONY: clean features lint requirements help
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -8,6 +8,13 @@ PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 PROJECT_NAME = tractosplit
 PYTHON_INTERPRETER = python3
 .DEFAULT_GOAL := help
+
+# Features
+FEATURE_SUBJECTS = 151425/ 152831/ 154229/ 154936/ 155938/
+
+# Training
+train_subjects = 151425/ 152831/ 154229/ 155938/
+test_subjects = 154936/
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -19,10 +26,16 @@ requirements:
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
 ## Make Dataset
-features: requirements
-	rm -Rf data/processed/151425
-	mkdir data/processed/151425
-	$(PYTHON_INTERPRETER) -m src.features.build_features 151425
+features: #requirements
+	for subject in $(FEATURE_SUBJECTS); do  \
+		if [ -d "data/processed/$$subject" ]; then \
+			echo Subject $$subject feature folder already exist; \
+		else \
+			echo Subject $$subject feature folder doesnt exist, generating features; \
+			mkdir data/processed/$$subject; \
+			$(PYTHON_INTERPRETER) -m src.features.build_features $$subject; \
+		fi; \
+	done
 
 ## Delete all compiled Python files
 clean:

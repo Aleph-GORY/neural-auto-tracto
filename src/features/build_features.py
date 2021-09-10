@@ -25,13 +25,11 @@ def save_streamlines(streamlines, reference_path, output_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('subject', type=str, help='Name of subject folder.')
+    parser.add_argument('subject', type=str, help='Subject folder location.')
     parser.add_argument('--ref', '--reference', default='fa.nii.gz', help='Reference file, Nifti or Trk file. (default: fa.nii.gz)')
-    parser.add_argument('--npoints', type=int , default=20, help='Number of points in each streamline. (default: 20)')
     parser.add_argument('--epsilon', type=float , default=0.0, help='Error allowed. (default: 0.05)')
     parser.add_argument('--bruteforce', nargs='?', default=False, const=True, help='Do final bruteforce search. (default: False)')
     parser.add_argument('-tck', nargs='?', default=False, const=True, help='Save to tck. (default: False)')
-    # parser.add_argument('--show_notfound', default=False, const=True help='Show best candidate to notfound streamline. (default: False)')
     args = parser.parse_args()
 
     TIC = time.time()
@@ -39,8 +37,8 @@ if __name__ == '__main__':
 
     print('##### Loading full tractogram')
     tic = time.time()
-    full_tract = load_tractogram(constants.data_raw_path+args.subject+'_full_20p.tck', 
-                                 constants.data_raw_path+args.subject+'/'+args.ref, 
+    full_tract = load_tractogram(constants.data_raw_path+args.subject+'full_20p.tck', 
+                                 constants.data_raw_path+args.subject+args.ref, 
                                  bbox_valid_check=False)
     full_streamlines = np.array(full_tract.streamlines)
     full_streamlines_endpts = np.floor(full_streamlines[:,(0,-1)]/epsilon).reshape((full_streamlines.shape[0], 2*3))
@@ -68,7 +66,7 @@ if __name__ == '__main__':
         print('##### Loading cluster:', cluster_name, c)
         tic = time.time()
         cluster_tract = load_tractogram(cluster_path, 
-                                     constants.data_raw_path+args.subject+'/'+args.ref, 
+                                     constants.data_raw_path+args.subject+args.ref, 
                                      bbox_valid_check=False)
         cluster_streamlines = np.array(cluster_tract.streamlines)
         cluster_tracto_size += len(cluster_streamlines)
@@ -177,42 +175,42 @@ if __name__ == '__main__':
     # Notfound data
     x_notfound = np.array(np.array(not_found))
     y_notfound = np.array(np.array(not_found_labels))
-    save_dir = constants.data_proc_path+args.subject+'/'
-    with open(save_dir+args.subject+'_notfound.npy', 'w+b') as f:
+    save_dir = constants.data_proc_path+args.subject
+    with open(save_dir+'notfound.npy', 'w+b') as f:
         np.save(f, x_notfound)
         np.save(f, y_notfound)
     if args.tck:
         save_streamlines(x_notfound, 
-                        constants.data_raw_path+args.subject+'/'+args.ref,
-                        save_dir+'tck/'+args.subject+'_notfound.tck')
+                        constants.data_raw_path+args.subject+args.ref,
+                        save_dir+'tck/'+'notfound.tck')
     # Training data
     x_training = np.concatenate((full_streamlines, x_notfound), axis=0)
     y_training = np.concatenate((labels, y_notfound))
-    with open(save_dir+args.subject+'.npy', 'w+b') as f:
+    with open(save_dir+'full.npy', 'w+b') as f:
         np.save(f, x_training)
         np.save(f, y_training)
     if args.tck:
         save_streamlines(x_training, 
-                        constants.data_raw_path+args.subject+'/'+args.ref,
-                        save_dir+'tck/'+args.subject+'.tck')
+                        constants.data_raw_path+args.subject+args.ref,
+                        save_dir+'tck/'+'full.tck')
     # Labeled cluster data
     x_labeled = x_training[y_training != 0]
     y_labeled = y_training[y_training != 0]
-    with open(save_dir+args.subject+'_labeled.npy', 'w+b') as f:
+    with open(save_dir+'labeled.npy', 'w+b') as f:
         np.save(f, x_labeled)
         np.save(f, y_labeled)
     if args.tck:
         save_streamlines(x_labeled, 
-                        constants.data_raw_path+args.subject+'/'+args.ref,
-                        save_dir+'tck/'+args.subject+'_labeled.tck')
+                        constants.data_raw_path+args.subject+args.ref,
+                        save_dir+'tck/'+'labeled.tck')
     # Garbage data
     x_garbage = x_training[y_training == 0]
-    with open(save_dir+args.subject+'_garbage.npy', 'w+b') as f:
+    with open(save_dir+'garbage.npy', 'w+b') as f:
         np.save(f, x_garbage)
     if args.tck:
         save_streamlines(x_garbage, 
-                        constants.data_raw_path+args.subject+'/'+args.ref,
-                        save_dir+'tck/'+args.subject+'_garbage.tck')
+                        constants.data_raw_path+args.subject+args.ref,
+                        save_dir+'tck/'+'garbage.tck')
     toc = time.time()
     print('Save results time:', toc-tic)
     print()
