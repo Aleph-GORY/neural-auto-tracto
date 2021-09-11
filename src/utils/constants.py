@@ -1,7 +1,7 @@
 # PATHS
 data_raw_path = 'data/raw/'
 data_proc_path = 'data/processed/'
-models_path = 'models/'
+lstm_path = 'models/LSTM/'
 
 # FEATURES
 clusters = {
@@ -20,5 +20,6 @@ def get_clusters(subject):
     return output
 
 # MODELS
+lstm_prefix = 'lstm-ckpt'
 garbage_percent = 0.5
 labeled_percent = 1
