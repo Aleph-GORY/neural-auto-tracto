@@ -1,8 +1,7 @@
 import tensorflow as tf
-import datetime
 import matplotlib.pyplot as plt
-import src.utils.constants as constants
-from src.models.generators import SLGenerator
+import tractosplit.utils.constants as constants
+from tractosplit.models.generators import SL_stochastic_generator, SL_basic_generator
 
 
 def plot_graphs(history, metric):
@@ -19,6 +18,7 @@ class lstmClassifier(tf.keras.Model):
     _rnn_size = 32
     _int_size = 32
     _s_batch = 12
+    _epochs = 25
 
     def __init__(self):
         super(lstmClassifier, self).__init__(name="lstm_classifier")
@@ -53,10 +53,12 @@ class lstmClassifier(tf.keras.Model):
         print("[INFO] Used for training:", train_subjects)
         print("[INFO] Used for testing:", test_subjects)
         # Training
-        training_generator = SLGenerator(train_subjects)
-        validation_generator = SLGenerator(test_subjects, batchsize=10000)
+        training_generator = SL_stochastic_generator(train_subjects)
+        validation_generator = SL_basic_generator(test_subjects, batchsize=10000)
         history = self.fit(
-            training_generator, epochs=25, validation_data=validation_generator
+            training_generator,
+            epochs=self._epochs,
+            validation_data=validation_generator,
         )
         checkpoint.save(file_prefix=checkpoint_prefix)
         # Plots
@@ -69,17 +71,17 @@ class lstmClassifier(tf.keras.Model):
         plt.ylim(0, None)
         plt.savefig(constants.train_report_path + train_id + "accuracy_loss.png")
 
-    def restore(self, timestamp):
+    def restore(self, train_id):
         self.compile(
             loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
             optimizer=tf.keras.optimizers.Adam(1e-4),
             metrics=["accuracy"],
         )
         # Checkpoint
-        checkpoint_dir = constants.lstm_path + timestamp
+        checkpoint_dir = constants.lstm_path + train_id
         checkpoint = tf.train.Checkpoint(optimizer=self.optimizer, model=self)
         # Load parameters saved in previous trainings
-        print("[INFO] Restoring lstm model:", timestamp)
+        print("[INFO] Restoring lstm model:", train_id)
         status = checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
         status.assert_existing_objects_matched()
         print("[INFO] Restored correctly")

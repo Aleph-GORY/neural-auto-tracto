@@ -29,7 +29,7 @@ features: requirements
 
 ## Trains model
 weights:
-	$(PYTHON_INTERPRETER) -m tractosplit.models.train $(CLASSIFIER) -t $(TRAIN_SUBJECTS) -v $(VALIDATION_SUBJECTS)
+	$(PYTHON_INTERPRETER) -m tractosplit.train $(CLASSIFIER) -t $(TRAIN_SUBJECTS) -v $(VALIDATION_SUBJECTS)
 
 ## Lint using flake8
 lint:
