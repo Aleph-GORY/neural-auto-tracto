@@ -1,7 +1,7 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import tractosplit.utils.constants as constants
-from tractosplit.models.generators import SL_stochastic_generator, SL_basic_generator
+from tractosplit.models.generators import SL_generator
 
 
 def plot_graphs(history, metric):
@@ -53,8 +53,8 @@ class lstmClassifier(tf.keras.Model):
         print("[INFO] Used for training:", train_subjects)
         print("[INFO] Used for testing:", test_subjects)
         # Training
-        training_generator = SL_stochastic_generator(train_subjects)
-        validation_generator = SL_basic_generator(test_subjects, batchsize=10000)
+        training_generator = SL_generator(train_subjects)
+        validation_generator = SL_generator(test_subjects, batchsize=10000)
         history = self.fit(
             training_generator,
             epochs=self._epochs,

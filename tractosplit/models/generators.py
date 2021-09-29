@@ -6,9 +6,9 @@ import random
 import tractosplit.utils.constants as constants
 
 
-class SL_stochastic_generator(tf.keras.utils.Sequence):
-    def __init__(self, subjects, batchsize=128, shuffle=True):
-        self.batchsize = batchsize
+class SL_generator(tf.keras.utils.Sequence):
+    def __init__(self, subjects, batchsize=256, shuffle=True):
+        self.batchsize = batchsize // 2
         self.shuffle = shuffle
         self.subjects = list(subjects)
 
@@ -18,12 +18,8 @@ class SL_stochastic_generator(tf.keras.utils.Sequence):
         self.lenghts = []
         for subject in self.subjects:
             features_path = constants.data_processed_path + subject
-            x_garbage = np.load(features_path + "garbage.npy", mmap_mode="r")
-            self.lenghts.append(
-                int(np.floor(x_garbage.shape[0] * constants.garbage_percent))
-            )
-            x_labeled = np.load(features_path + "labeled.npy", mmap_mode="r")
-            self.lenghts[-1] += x_labeled.shape[0]
+            x_labeled = npload(features_path + "labeled.npy", mmap_mode="r")
+            self.lenghts.append(x_labeled.shape[0])
 
         batches = [0]
         for length in self.lenghts:
@@ -36,37 +32,35 @@ class SL_stochastic_generator(tf.keras.utils.Sequence):
     def __len__(self):
         return self.n_batches
 
-    def _get_tracto_dataset(self, subject_id):
+    def _get_tracto_dataset(self, subject_id, index):
         features_path = constants.data_processed_path + self.subjects[subject_id]
 
         x_garbage = npload(features_path + "garbage.npy", mmap_mode="r")
-        random_sample = random.sample(range(x_garbage.shape[0]), self.batchsize // 2)
-        x_garbage = np.array(x_garbage[random_sample])
+        x_garbage = np.array(
+            x_garbage[index * self.batchsize : (index + 1) * self.batchsize]
+        )
         y_garbage = np.zeros(x_garbage.shape[0], dtype=np.int32)
 
         with open(features_path + "labeled.npy", "rb") as f:
             x_labeled = npload(f)
             y_labeled = npload(f)
-        random_sample = random.sample(range(x_labeled.shape[0]), self.batchsize // 2)
-        x_labeled = np.array(x_labeled[random_sample])
-        y_labeled = np.array(y_labeled[random_sample])
+        x_labeled = x_labeled[index * self.batchsize : (index + 1) * self.batchsize]
+        y_labeled = y_labeled[index * self.batchsize : (index + 1) * self.batchsize]
 
         x = np.concatenate([x_garbage, x_labeled], axis=0)
         y = np.concatenate([y_garbage, y_labeled], axis=0)
-        random_indices = tf.random.shuffle(range(x.shape[0]))
-        x = x[random_indices]
-        y = to_categorical(y[random_indices], 36)
-
+        y = to_categorical(y, 36)
         return x, y
 
     def __getitem__(self, index):
         subject = 0
         while subject < len(self.subjects):
             if index in self.batches[subject]:
+                index = index - self.batches[subject].start
                 break
             subject += 1
 
-        batch_x, batch_y = self._get_tracto_dataset(subject)
+        batch_x, batch_y = self._get_tracto_dataset(subject, index)
         return batch_x, batch_y
 
     def on_epoch_end(self):
@@ -76,7 +70,7 @@ class SL_stochastic_generator(tf.keras.utils.Sequence):
 
 
 if __name__ == "__main__":
-    gen = SL_stochastic_generator(["151425/"])
+    gen = SL_generator(["151425/"])
     x, y = gen.__getitem__(0)
     print(x.shape)
     print(y.shape)
