@@ -1,22 +1,14 @@
 .PHONY: clean features lint requirements help
 
-#################################################################################
-# GLOBALS                                                                       #
-#################################################################################
-
 PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 PROJECT_NAME = tractosplit
 PYTHON_INTERPRETER = python3
 .DEFAULT_GOAL := help
 
-# data
-include $(PROJECT_DIR)/data/data.mk
-# models
-include $(PROJECT_DIR)/models/models.mk
+include $(PROJECT_DIR)/Makedata.mk
+include $(PROJECT_DIR)/Makeweights.mk
 
-#################################################################################
-# COMMANDS                                                                      #
-#################################################################################
+# COMMANDS #
 
 ## Install Python Dependencies
 requirements:
@@ -24,24 +16,27 @@ requirements:
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
 ## Make Dataset
-features: #requirements
-	for subject in $(feature_subjects); do  \
+features: requirements
+	for subject in $(FEATURES_SUBJECTS); do  \
 		if [ -d "data/processed/$$subject" ]; then \
 			echo Subject $$subject feature folder already exist; \
 		else \
 			echo Subject $$subject feature folder doesnt exist, generating features; \
 			mkdir data/processed/$$subject; \
-			$(PYTHON_INTERPRETER) -m src.features.build_features $$subject; \
+			$(PYTHON_INTERPRETER) -m tractosplit.features.build_features $$subject; \
 		fi; \
 	done
 
-## Makes new model
-model:
-	$(PYTHON_INTERPRETER) -m src.models.train $(classifier) -t $(train_subjects) -v $(val_subjects)
+## Trains model
+weights:
+	$(PYTHON_INTERPRETER) -m tractosplit.models.train $(CLASSIFIER) -t $(TRAIN_SUBJECTS) -v $(VALIDATION_SUBJECTS)
 
 ## Lint using flake8
 lint:
-	flake8 src
+	pylint tractosplit
+
+
+
 
 #################################################################################
 # HELP                                                                          #
