@@ -2,6 +2,7 @@
 data_raw_path = 'data/raw/'
 data_proc_path = 'data/processed/'
 lstm_path = 'models/LSTM/'
+train_report_path = 'reports/training/'
 
 # FEATURES
 clusters = {

@@ -9,12 +9,10 @@ PROJECT_NAME = tractosplit
 PYTHON_INTERPRETER = python3
 .DEFAULT_GOAL := help
 
-# Features
-FEATURE_SUBJECTS = 151425/ 152831/ 154229/ 154936/ 155938/
-
-# Training
-train_subjects = 151425/ 152831/ 154229/ 155938/
-test_subjects = 154936/
+# data
+include $(PROJECT_DIR)/data/data.mk
+# models
+include $(PROJECT_DIR)/models/models.mk
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -27,7 +25,7 @@ requirements:
 
 ## Make Dataset
 features: #requirements
-	for subject in $(FEATURE_SUBJECTS); do  \
+	for subject in $(feature_subjects); do  \
 		if [ -d "data/processed/$$subject" ]; then \
 			echo Subject $$subject feature folder already exist; \
 		else \
@@ -37,10 +35,9 @@ features: #requirements
 		fi; \
 	done
 
-## Delete all compiled Python files
-clean:
-	find . -type f -name "*.py[co]" -delete
-	find . -type d -name "__pycache__" -delete
+## Makes new model
+model:
+	$(PYTHON_INTERPRETER) -m src.models.train $(classifier) -t $(train_subjects) -v $(val_subjects)
 
 ## Lint using flake8
 lint:
